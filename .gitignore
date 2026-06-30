@@ -1,0 +1,40 @@
+# ─── Données sensibles — NE JAMAIS VERSIONNER ─────────────────────────────────
+
+# Fichier des sites réels (contient les vraies IP de votre infra)
+sites.csv
+
+# Rapports PDF générés
+*.pdf
+rapports/
+
+# Logo (souvent propriétaire)
+logo.png
+logo.jpg
+*.png
+*.jpg
+
+# Fichiers d'environnement contenant des tokens/secrets
+.env
+.envrc
+*.env
+
+# Credentials SSH
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+
+# ─── Divers ───────────────────────────────────────────────────────────────────
+.DS_Store
+*.swp
+*.bak

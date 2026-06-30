@@ -1,0 +1,6 @@
+site,host,cluster,group
+SITE1,192.0.2.10,cluster-name-1,REGION-A
+SITE2,192.0.2.20,cluster-name-2,REGION-A
+SITE3,192.0.2.30,cluster-name-3,REGION-B
+SITE4,192.0.2.40,cluster-name-4,REGION-B
+SITE5,192.0.2.50,cluster-name-5,REGION-C
