@@ -1,119 +1,82 @@
-# Proxmox Report Generator — version générique
+# proxmox-report-generator
 
-Outil Python de génération de rapports PDF et d'administration pour infrastructure **Proxmox VE** multi-sites, avec interface terminal interactive (TUI).
+A Python tool to generate PDF audit reports for Proxmox VE clusters, with an interactive terminal UI for multi-site management.
 
-Cette version n'est liée à aucun site, organisation ou logo en particulier : tout est paramétrable via `sites.csv` et des variables d'environnement optionnelles.
-
----
-
-## Fonctionnalités
-
-- Rapport PDF complet par cluster (nœuds, VMs, stockage, réseau)
-- Interface terminal interactive (TUI) pour naviguer entre tous les sites déclarés dans `sites.csv`
-- Authentification sécurisée — aucun credential en clair
-- Compatible CI/CD (GitLab, GitHub Actions)
-- Personnalisation (organisation, auteur, logo, couleurs) sans toucher au code
+Built for consultants and infrastructure engineers who manage multiple Proxmox clusters across different clients or sites — the kind of setup where you need a quick, repeatable way to produce clean reports without logging into each cluster manually.
 
 ---
 
-## Démarrage rapide
+## What it does
+
+- Connects to the Proxmox API and pulls cluster data (nodes, VMs, LXC, storage, network)
+- Generates a multi-page PDF report per cluster
+- Provides a terminal UI to navigate and manage all your sites from one place
+- Supports site grouping (by region, client, or any category you define)
+- Batch PDF generation — run reports for an entire group or all sites at once
+- Optional Zabbix integration to auto-build your sites inventory
+
+---
+
+## Requirements
+
+- Python 3.10+
+- API access to Proxmox VE nodes (port 8006)
+- `PVEAuditor` role minimum — read-only is enough
 
 ```bash
-# 1. Cloner le repo
-git clone https://github.com/votre-user/proxmox-report-generator.git
-cd proxmox-report-generator
-
-# 2. Installer les dépendances
 pip install requests urllib3 fpdf2 paramiko
+```
 
-# 3. Créer votre fichier de sites (à partir de l'exemple fourni)
+---
+
+## Getting started
+
+```bash
+git clone https://github.com/hassan-salmane/proxmox-report-generator.git
+cd proxmox-report-generator
+pip install requests urllib3 fpdf2 paramiko
 cp sites.csv.example sites.csv
-# Puis éditer sites.csv avec vos vraies IP et noms de clusters
-
-# 4. Lancer le TUI
+# edit sites.csv with your clusters
 python3 tui.py
 ```
 
-> **Note** : `sites.csv` est volontairement exclu du versionnement (`.gitignore`)
-> car il contient les IP réelles de votre infrastructure. Seul `sites.csv.example`
-> est versionné comme modèle de départ.
-
 ---
 
+## sites.csv
 
-
-- Python **3.10+**
-- Accès réseau aux nœuds Proxmox VE (port **8006**)
-- Compte Proxmox avec droits lecture (`PVEAuditor` minimum)
-
----
-
-## Installation
-
-```bash
-pip install requests urllib3 fpdf2 paramiko
-```
-
-> Avec virtualenv :
-> ```bash
-> python3 -m venv .venv
-> source .venv/bin/activate
-> pip install requests urllib3 fpdf2 paramiko
-> ```
-
----
-
-## Configurer les sites
-
-Éditer `sites.csv` — une ligne par site/cluster, aucune limite de nombre :
+The only file you need to configure. One line per cluster:
 
 ```csv
 site,host,cluster
 SITE1,192.0.2.10,cluster-name-1
 SITE2,192.0.2.20,cluster-name-2
-SITE3,192.0.2.30,cluster-name-3
 ```
 
-### Regroupement optionnel (région, client, environnement…)
-
-Une colonne `group` optionnelle permet de regrouper les sites dans l'interface — peu importe ce qu'elle représente selon le contexte (région chez un client en architecture régionale, nom de client si vous gérez plusieurs sociétés, environnement prod/test, etc.) :
+Add a `group` column if you manage multiple regions or clients — the TUI will group your sites accordingly and let you run batch reports per group:
 
 ```csv
 site,host,cluster,group
-SITE1,192.0.2.10,cluster-name-1,REGION-A
-SITE2,192.0.2.20,cluster-name-2,REGION-B
-SITE3,192.0.2.30,cluster-name-3,REGION-A
+SITE1,192.0.2.10,cluster-name-1,CLIENT-A
+SITE2,192.0.2.20,cluster-name-2,CLIENT-A
+SITE3,192.0.2.30,cluster-name-3,CLIENT-B
 ```
 
-Voir `sites.example-with-groups.csv` pour un exemple complet (répartition fictive, à adapter).
-
-Sans cette colonne, le TUI affiche tous les sites à plat, comme avant — aucune configuration supplémentaire n'est nécessaire.
-
-Avec cette colonne, le TUI affiche des en-têtes de groupe dans la liste ; sélectionner un en-tête (au lieu d'un site) propose de générer un rapport PDF pour l'ensemble des sites du groupe en une seule opération, avec le choix d'utiliser les mêmes identifiants pour tous ou de les saisir site par site. Une entrée « Tous les sites » est aussi disponible pour un traitement en masse sur l'intégralité du parc, tous groupes confondus.
-
-Le libellé affiché pour ce regroupement (« Groupe » par défaut) est personnalisable via `PVE_TUI_GROUP_LABEL` (voir ci-dessous) — par exemple `"Région"`, `"Client"` ou `"Environnement"` selon le contexte d'usage.
+`sites.csv` is excluded from git by default (see `.gitignore`) — it contains your real infrastructure IPs and should never be committed.
 
 ---
 
-## Utilisation
+## TUI navigation
 
-### Interface terminal (TUI)
-
-```bash
-python3 tui.py
+```
+↑ ↓     Navigate sites or groups
+Enter   Select a site → action menu (PDF, ping, quick info, SSH)
+        Select a group → batch actions for all sites in the group
+Q       Back / Quit
 ```
 
-| Touche | Action |
-|--------|--------|
-| `↑` `↓` | Naviguer entre les sites |
-| `Enter` | Sélectionner un site |
-| `Q` / `Echap` | Retour / Quitter |
+---
 
-Actions disponibles par site : génération de rapport PDF, ping, infos rapides (version PVE, nœuds, VMs), ouverture d'une session SSH.
-
-Les rapports sont sauvegardés par défaut dans `~/rapports/` (configurable, voir ci-dessous).
-
-### Script direct
+## Generating a report directly
 
 ```bash
 python3 proxmox_report.py \
@@ -122,116 +85,90 @@ python3 proxmox_report.py \
   --username root@pam
 ```
 
-Le mot de passe est demandé de manière sécurisée (`getpass`) — aucun credential en clair.
+Password is prompted via `getpass` — nothing stored in plain text.
 
 ---
 
-## Personnalisation (sans toucher au code)
+## Configuration
 
-Toutes ces variables sont optionnelles ; le script fonctionne sans elles avec des valeurs neutres.
+Everything is driven by environment variables — no need to touch the code:
 
-### TUI (`tui.py`)
-
-| Variable | Description | Défaut |
-|----------|--------------|--------|
-| `PVE_TUI_SITES_CSV` | Chemin du fichier CSV des sites | `./sites.csv` |
-| `PVE_TUI_REPORT` | Chemin du script de génération de rapport | `./proxmox_report.py` |
-| `PVE_TUI_LOGO` | Logo à inclure dans les rapports PDF | aucun |
-| `PVE_TUI_OUTDIR` | Dossier de sortie des rapports | `~/rapports` |
-| `PVE_TUI_TITLE` | Titre affiché en en-tête de l'interface | `Gestionnaire de sites Proxmox` |
-| `PVE_TUI_GROUP_LABEL` | Libellé du regroupement affiché dans l'interface (ex: `Région`, `Client`) | `Groupe` |
-
-### Rapport PDF (`proxmox_report.py`)
-
-| Variable / Argument | Description | Défaut |
-|----------------------|--------------|--------|
-| `PVE_REPORT_ORG` / `--org` | Nom d'organisation affiché en en-tête du rapport | `Infrastructure IT` |
-| `PVE_REPORT_AUTHOR` / `--author` | Nom affiché en pied de page | `Infrastructure IT` |
-| `PVE_REPORT_COLOR_HEADER` | Couleur principale (format `R,G,B`) | `0,86,162` |
-| `PVE_REPORT_COLOR_ACCENT` | Couleur d'accent (format `R,G,B`) | `0,174,239` |
-
-Exemple :
-
-```bash
-export PVE_TUI_TITLE="Gestionnaire de sites Proxmox — Refonte & Migration"
-export PVE_REPORT_ORG="Refonte & Migration — Infrastructure"
-python3 tui.py
-```
-
-### Logo (optionnel)
-
-```bash
-export PVE_TUI_LOGO=/chemin/vers/logo.png
-```
+| Variable | What it does | Default |
+|----------|-------------|---------|
+| `PVE_TUI_SITES_CSV` | Path to your sites file | `./sites.csv` |
+| `PVE_TUI_LOGO` | Logo to embed in PDF reports | none |
+| `PVE_TUI_OUTDIR` | Where reports are saved | `~/reports` |
+| `PVE_TUI_TITLE` | TUI header title | `Proxmox Site Manager` |
+| `PVE_TUI_GROUP_LABEL` | Label for the grouping level | `Group` |
+| `PVE_REPORT_ORG` | Organization name in report header | `Infrastructure IT` |
+| `PVE_REPORT_AUTHOR` | Name in report footer | `Infrastructure IT` |
+| `PVE_REPORT_COLOR_HEADER` | Primary color `R,G,B` | `0,86,162` |
 
 ---
 
-## Authentification
+## Zabbix integration
 
-### Mode interactif
+If your clusters are monitored in Zabbix via the **Proxmox VE by HTTP** template, you can generate `sites.csv` automatically:
 
-Aucune configuration requise. Username et password demandés au lancement via `getpass`.
+```bash
+export ZABBIX_URL="https://your-zabbix/api_jsonrpc.php"
+export ZABBIX_TOKEN="your-api-token"
 
-### Mode CI/CD
+python3 extract_sites_from_zabbix.py --dry-run   # check before writing
+python3 extract_sites_from_zabbix.py --out sites.csv
+```
 
-Déclarer les variables d'environnement suivantes :
+The script expects:
+- One hostgroup per site named `DATACENTER/<SITE>` containing the PVE cluster host
+- The cluster host monitored via **Proxmox VE by HTTP**, with `{$PVE.URL.HOST}` set to the node IP
+- Region/group hostgroups named `PBS-SITE-<GROUP>` (e.g. `PBS-SITE-NORTH`)
 
-| Variable | Description | Sensible |
-|----------|-------------|----------|
-| `PVE_TOKEN_USER` | Utilisateur du token (ex: `root@pam`) | Non |
-| `PVE_TOKEN_ID` | Identifiant du token Proxmox | Non |
-| `PVE_TOKEN_SECRET` | Secret du token Proxmox | **Oui** |
+These conventions are fully configurable at the top of the script — adapt them to your Zabbix naming.
 
-Créer le token dans Proxmox : **Datacenter → Permissions → API Tokens → Add**.
+---
 
-Exemple `.gitlab-ci.yml` :
+## Authentication
+
+**Interactive**: username and password prompted at runtime.
+
+**CI/CD**: use a Proxmox API token instead:
 
 ```yaml
+# .gitlab-ci.yml example
 generate_report:
   stage: report
   script:
     - pip install requests urllib3 fpdf2 paramiko
     - python3 proxmox_report.py --host $PVE_HOST --site $PVE_SITE
   artifacts:
-    paths:
-      - "*.pdf"
+    paths: ["*.pdf"]
     expire_in: 30 days
   only:
     - schedules
 ```
 
+Set `PVE_TOKEN_USER`, `PVE_TOKEN_ID`, and `PVE_TOKEN_SECRET` as CI variables.
+
 ---
 
-## Structure du projet
+## Project structure
 
 ```
 proxmox-report-generator/
-├── proxmox_report.py   # Script de génération PDF (générique, multi-sites)
-├── tui.py              # Interface terminal interactive (générique)
-├── sites.csv           # Liste des sites à administrer
-└── README.md            # Ce fichier
+├── tui.py                        # Terminal UI
+├── proxmox_report.py             # PDF report engine
+├── extract_sites_from_zabbix.py  # Zabbix → sites.csv
+├── sites.csv.example             # Template — copy to sites.csv
+├── .gitignore
+└── README.md
 ```
 
-> Ajouter dans `.gitignore` :
-> ```
-> logo.png
-> *.pdf
-> rapports/
-> ```
-
 ---
 
-## Dépendances
+## Contributing
 
-| Package | Usage |
-|---------|-------|
-| `requests` | Appels API Proxmox |
-| `urllib3` | Gestion SSL/TLS |
-| `fpdf2` | Génération PDF |
-| `paramiko` | Collecte SSH (optionnel) |
+Issues and pull requests are welcome.
 
----
+## License
 
-## Licence
-
-MIT License — libre d'utilisation, modification et distribution.
+MIT
