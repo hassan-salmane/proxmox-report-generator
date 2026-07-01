@@ -1,4 +1,4 @@
-# proxmox-report-generator
+# Proxmox Report Generator
 
 A Python tool to generate PDF audit reports for Proxmox VE clusters, with an interactive terminal UI for multi-site management.
 
