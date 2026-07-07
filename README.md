@@ -5,178 +5,128 @@
 ![Proxmox VE](https://img.shields.io/badge/Proxmox-VE%208.x-orange?logo=proxmox)
 ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
 
-Outil Python de génération de rapports PDF et d'administration pour infrastructure **Proxmox VE** multi-sites, avec interface terminal interactive.
+Python tool for generating PDF reports and administering **Proxmox VE** multi-site infrastructure, with an interactive terminal UI.
 
 ---
 
-## Fonctionnalités
+## Features
 
-- Rapport PDF complet par cluster (nœuds, VMs, stockage, réseau)
-- Interface terminal interactive (TUI) pour naviguer entre les sites
-- Authentification sécurisée — aucun credential en clair
-- Compatible CI/CD (GitLab, GitHub Actions)
+- Full PDF report per cluster (nodes, VMs, storage, network)
+- Interactive terminal UI (TUI) to navigate between sites
+- Secure authentication — no credentials in plain text
+- CI/CD ready (GitLab, GitHub Actions)
 
 ---
 
-## Prérequis
+## Requirements
 
 - Python **3.10+**
-- Accès réseau aux nœuds Proxmox VE (port **8006**)
-- Compte Proxmox avec droits lecture (`PVEAuditor` minimum)
+- Network access to Proxmox VE nodes (port **8006**)
+- Proxmox account with read permissions (`PVEAuditor` minimum)
 
 ---
 
 ## Installation
 
-### 1. Cloner le dépôt
+### 1. Clone the repository
 
-```bash
-git clone https://github.com/youruser/proxmox-report-generator.git
-cd proxmox-report-generator
-```
+    git clone https://github.com/hassan-salmane/proxmox-report-generator.git
+    cd proxmox-report-generator
 
-### 2. Installer les dépendances
+### 2. Install dependencies
 
-```bash
-pip install requests urllib3 fpdf2 paramiko
-```
+    pip install requests urllib3 fpdf2 paramiko
 
-> Avec virtualenv :
-> ```bash
-> python3 -m venv .venv
-> source .venv/bin/activate
-> pip install requests urllib3 fpdf2 paramiko
-> ```
+### 3. Configure sites
 
-### 3. Configurer les sites
+Edit `sites.csv`:
 
-Éditer `sites.csv` :
+    site,host,cluster
+    SITE1,192.168.1.10,cluster-name-1
+    SITE2,192.168.1.20,cluster-name-2
 
-```csv
-site,host,cluster
-SITE1,192.168.1.10,cluster-name-1
-SITE2,192.168.1.20,cluster-name-2
-```
+### 4. Add a logo (optional)
 
-### 4. Placer le logo (optionnel)
-
-```bash
-cp /chemin/vers/logo.png ./logo.png
-```
+    cp /path/to/logo.png ./logo.png
 
 ---
 
-## Utilisation
+## Usage
 
-### Interface terminal (TUI)
+### Terminal UI (recommended)
 
-```bash
-python3 tui.py
-```
+    python3 tui.py
 
-| Touche | Action |
-|--------|--------|
-| `↑` `↓` | Naviguer entre les sites |
-| `Enter` | Sélectionner un site |
-| `Q` / `Echap` | Retour / Quitter |
+| Key | Action |
+|-----|--------|
+| Up / Down | Navigate between sites |
+| Enter | Select a site |
+| Q / Esc | Back / Quit |
 
-Actions disponibles par site :
+Available actions per site:
 
 | Action | Description |
 |--------|-------------|
-| Générer rapport PDF | Rapport complet du cluster |
-| Ping | Test de connectivité |
-| Infos rapides | Version PVE, nœuds, VMs en temps réel |
-| SSH | Session SSH vers le nœud principal |
+| Generate PDF report | Full cluster PDF report |
+| Ping | Network connectivity test |
+| Quick info | Live PVE version, nodes, VMs |
+| SSH | Open SSH session to the main node |
 
-Les rapports sont sauvegardés dans `~/rapports/`.
-
----
-
-### Script direct
-
-```bash
-python3 report.py \
-  --host 192.168.1.10 \
-  --site SITE1 \
-  --logo ./logo.png \
-  --username root@pam
-```
-
-Le mot de passe est demandé de manière sécurisée — aucun credential en clair.
+Reports are saved to ~/reports/.
 
 ---
 
-## Authentification
+### Direct script
 
-### Mode interactif
+    python3 report.py --host 192.168.1.10 --site SITE1 --logo ./logo.png --username root@pam
 
-Aucune configuration requise. Username et password demandés au lancement via `getpass`.
-
-### Mode CI/CD
-
-Déclarer les variables d'environnement suivantes :
-
-| Variable | Description | Sensible |
-|----------|-------------|----------|
-| `PVE_TOKEN_USER` | Utilisateur du token (ex: `root@pam`) | Non |
-| `PVE_TOKEN_ID` | Identifiant du token Proxmox | Non |
-| `PVE_TOKEN_SECRET` | Secret du token Proxmox | **Oui** |
-
-Créer le token dans Proxmox : **Datacenter → Permissions → API Tokens → Add**.
-
-Exemple `.gitlab-ci.yml` :
-
-```yaml
-generate_report:
-  stage: report
-  script:
-    - pip install requests urllib3 fpdf2 paramiko
-    - python3 report.py --host $PVE_HOST --site $PVE_SITE --logo logo.png
-  artifacts:
-    paths:
-      - "*.pdf"
-    expire_in: 30 days
-  only:
-    - schedules
-```
+Password is prompted securely via getpass — no credentials in plain text.
 
 ---
 
-## Structure du projet
+## Authentication
 
-```
-proxmox-report-generator/
-├── report.py       # Script de génération PDF
-├── tui.py          # Interface terminal interactive
-├── sites.csv       # Liste des sites à administrer
-├── logo.png        # Logo personnalisé (optionnel, non versionné)
-└── README.md       # Ce fichier
-```
+### Interactive mode
 
-> Ajouter dans `.gitignore` :
-> ```
-> logo.png
-> *.pdf
-> rapports/
-> ```
+No configuration required. Username and password are prompted at startup.
+
+### CI/CD mode
+
+| Variable | Description | Sensitive |
+|----------|-------------|-----------|
+| PVE_TOKEN_USER | Token user (e.g. root@pam) | No |
+| PVE_TOKEN_ID | Proxmox API token ID | No |
+| PVE_TOKEN_SECRET | Proxmox API token secret | Yes |
+
+Create the token in Proxmox: Datacenter -> Permissions -> API Tokens -> Add.
 
 ---
 
-## Dépendances
+## Project structure
+
+    proxmox-report-generator/
+    |-- report.py       # PDF report generation script
+    |-- tui.py          # Interactive terminal UI
+    |-- sites.csv       # Site list
+    |-- logo.png        # Custom logo (optional, not versioned)
+    |-- README.md       # This file
+
+---
+
+## Dependencies
 
 | Package | Usage |
 |---------|-------|
-| `requests` | Appels API Proxmox |
-| `urllib3` | Gestion SSL/TLS |
-| `fpdf2` | Génération PDF |
-| `paramiko` | Collecte SSH (optionnel) |
+| requests | Proxmox API calls |
+| urllib3 | SSL/TLS handling |
+| fpdf2 | PDF generation |
+| paramiko | SSH NIC speed collection (optional) |
 
 ---
 
-## Licence
+## License
 
-MIT License — libre d'utilisation, modification et distribution.
+MIT — see LICENSE.
 
 ---
 
