@@ -138,4 +138,4 @@ MIT — see LICENSE.
 ## Author
 
 **Hassan Salmane** — IT Infrastructure Engineer
-[salmane.pro](https://salmane.pro) · [LinkedIn](https://linkedin.com/in/hassansalmane) · [GitHub](https://github.com/hassan-salmane)
+<a href="https://salmane.pro" target="_blank">salmane.pro</a> · <a href="https://linkedin.com/in/hassansalmane" target="_blank">LinkedIn</a> · <a href="https://github.com/hassan-salmane" target="_blank">GitHub</a>
