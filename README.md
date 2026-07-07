@@ -7,6 +7,11 @@
 
 Python tool for generating PDF reports and administering **Proxmox VE** multi-site infrastructure, with an interactive terminal UI.
 
+
+## Demo
+
+![Proxmox Report Generator Demo](demo.gif)
+
 ---
 
 ## Features
