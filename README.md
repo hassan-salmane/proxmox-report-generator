@@ -1,174 +1,186 @@
 # Proxmox Report Generator
 
-A Python tool to generate PDF audit reports for Proxmox VE clusters, with an interactive terminal UI for multi-site management.
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
+![Proxmox VE](https://img.shields.io/badge/Proxmox-VE%208.x-orange?logo=proxmox)
+![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
 
-Built for consultants and infrastructure engineers who manage multiple Proxmox clusters across different clients or sites — the kind of setup where you need a quick, repeatable way to produce clean reports without logging into each cluster manually.
-
----
-
-## What it does
-
-- Connects to the Proxmox API and pulls cluster data (nodes, VMs, LXC, storage, network)
-- Generates a multi-page PDF report per cluster
-- Provides a terminal UI to navigate and manage all your sites from one place
-- Supports site grouping (by region, client, or any category you define)
-- Batch PDF generation — run reports for an entire group or all sites at once
-- Optional Zabbix integration to auto-build your sites inventory
+Outil Python de génération de rapports PDF et d'administration pour infrastructure **Proxmox VE** multi-sites, avec interface terminal interactive.
 
 ---
 
-## Requirements
+## Fonctionnalités
 
-- Python 3.10+
-- API access to Proxmox VE nodes (port 8006)
-- `PVEAuditor` role minimum — read-only is enough
+- Rapport PDF complet par cluster (nœuds, VMs, stockage, réseau)
+- Interface terminal interactive (TUI) pour naviguer entre les sites
+- Authentification sécurisée — aucun credential en clair
+- Compatible CI/CD (GitLab, GitHub Actions)
+
+---
+
+## Prérequis
+
+- Python **3.10+**
+- Accès réseau aux nœuds Proxmox VE (port **8006**)
+- Compte Proxmox avec droits lecture (`PVEAuditor` minimum)
+
+---
+
+## Installation
+
+### 1. Cloner le dépôt
 
 ```bash
-pip install requests urllib3 fpdf2 paramiko
-```
-
----
-
-## Getting started
-
-```bash
-git clone https://github.com/hassan-salmane/proxmox-report-generator.git
+git clone https://github.com/youruser/proxmox-report-generator.git
 cd proxmox-report-generator
-pip install requests urllib3 fpdf2 paramiko
-cp sites.csv.example sites.csv
-# edit sites.csv with your clusters
-python3 tui.py
 ```
 
----
+### 2. Installer les dépendances
 
-## sites.csv
+```bash
+pip install requests urllib3 fpdf2 paramiko
+```
 
-The only file you need to configure. One line per cluster:
+> Avec virtualenv :
+> ```bash
+> python3 -m venv .venv
+> source .venv/bin/activate
+> pip install requests urllib3 fpdf2 paramiko
+> ```
+
+### 3. Configurer les sites
+
+Éditer `sites.csv` :
 
 ```csv
 site,host,cluster
-SITE1,192.0.2.10,cluster-name-1
-SITE2,192.0.2.20,cluster-name-2
+SITE1,192.168.1.10,cluster-name-1
+SITE2,192.168.1.20,cluster-name-2
 ```
 
-Add a `group` column if you manage multiple regions or clients — the TUI will group your sites accordingly and let you run batch reports per group:
-
-```csv
-site,host,cluster,group
-SITE1,192.0.2.10,cluster-name-1,CLIENT-A
-SITE2,192.0.2.20,cluster-name-2,CLIENT-A
-SITE3,192.0.2.30,cluster-name-3,CLIENT-B
-```
-
-`sites.csv` is excluded from git by default (see `.gitignore`) — it contains your real infrastructure IPs and should never be committed.
-
----
-
-## TUI navigation
-
-```
-↑ ↓     Navigate sites or groups
-Enter   Select a site → action menu (PDF, ping, quick info, SSH)
-        Select a group → batch actions for all sites in the group
-Q       Back / Quit
-```
-
----
-
-## Generating a report directly
+### 4. Placer le logo (optionnel)
 
 ```bash
-python3 proxmox_report.py \
-  --host 192.0.2.10 \
+cp /chemin/vers/logo.png ./logo.png
+```
+
+---
+
+## Utilisation
+
+### Interface terminal (TUI)
+
+```bash
+python3 tui.py
+```
+
+| Touche | Action |
+|--------|--------|
+| `↑` `↓` | Naviguer entre les sites |
+| `Enter` | Sélectionner un site |
+| `Q` / `Echap` | Retour / Quitter |
+
+Actions disponibles par site :
+
+| Action | Description |
+|--------|-------------|
+| Générer rapport PDF | Rapport complet du cluster |
+| Ping | Test de connectivité |
+| Infos rapides | Version PVE, nœuds, VMs en temps réel |
+| SSH | Session SSH vers le nœud principal |
+
+Les rapports sont sauvegardés dans `~/rapports/`.
+
+---
+
+### Script direct
+
+```bash
+python3 report.py \
+  --host 192.168.1.10 \
   --site SITE1 \
+  --logo ./logo.png \
   --username root@pam
 ```
 
-Password is prompted via `getpass` — nothing stored in plain text.
+Le mot de passe est demandé de manière sécurisée — aucun credential en clair.
 
 ---
 
-## Configuration
+## Authentification
 
-Everything is driven by environment variables — no need to touch the code:
+### Mode interactif
 
-| Variable | What it does | Default |
-|----------|-------------|---------|
-| `PVE_TUI_SITES_CSV` | Path to your sites file | `./sites.csv` |
-| `PVE_TUI_LOGO` | Logo to embed in PDF reports | none |
-| `PVE_TUI_OUTDIR` | Where reports are saved | `~/reports` |
-| `PVE_TUI_TITLE` | TUI header title | `Proxmox Site Manager` |
-| `PVE_TUI_GROUP_LABEL` | Label for the grouping level | `Group` |
-| `PVE_REPORT_ORG` | Organization name in report header | `Infrastructure IT` |
-| `PVE_REPORT_AUTHOR` | Name in report footer | `Infrastructure IT` |
-| `PVE_REPORT_COLOR_HEADER` | Primary color `R,G,B` | `0,86,162` |
+Aucune configuration requise. Username et password demandés au lancement via `getpass`.
 
----
+### Mode CI/CD
 
-## Zabbix integration
+Déclarer les variables d'environnement suivantes :
 
-If your clusters are monitored in Zabbix via the **Proxmox VE by HTTP** template, you can generate `sites.csv` automatically:
+| Variable | Description | Sensible |
+|----------|-------------|----------|
+| `PVE_TOKEN_USER` | Utilisateur du token (ex: `root@pam`) | Non |
+| `PVE_TOKEN_ID` | Identifiant du token Proxmox | Non |
+| `PVE_TOKEN_SECRET` | Secret du token Proxmox | **Oui** |
 
-```bash
-export ZABBIX_URL="https://your-zabbix/api_jsonrpc.php"
-export ZABBIX_TOKEN="your-api-token"
+Créer le token dans Proxmox : **Datacenter → Permissions → API Tokens → Add**.
 
-python3 extract_sites_from_zabbix.py --dry-run   # check before writing
-python3 extract_sites_from_zabbix.py --out sites.csv
-```
-
-The script expects:
-- One hostgroup per site named `DATACENTER/<SITE>` containing the PVE cluster host
-- The cluster host monitored via **Proxmox VE by HTTP**, with `{$PVE.URL.HOST}` set to the node IP
-- Region/group hostgroups named `PBS-SITE-<GROUP>` (e.g. `PBS-SITE-NORTH`)
-
-These conventions are fully configurable at the top of the script — adapt them to your Zabbix naming.
-
----
-
-## Authentication
-
-**Interactive**: username and password prompted at runtime.
-
-**CI/CD**: use a Proxmox API token instead:
+Exemple `.gitlab-ci.yml` :
 
 ```yaml
-# .gitlab-ci.yml example
 generate_report:
   stage: report
   script:
     - pip install requests urllib3 fpdf2 paramiko
-    - python3 proxmox_report.py --host $PVE_HOST --site $PVE_SITE
+    - python3 report.py --host $PVE_HOST --site $PVE_SITE --logo logo.png
   artifacts:
-    paths: ["*.pdf"]
+    paths:
+      - "*.pdf"
     expire_in: 30 days
   only:
     - schedules
 ```
 
-Set `PVE_TOKEN_USER`, `PVE_TOKEN_ID`, and `PVE_TOKEN_SECRET` as CI variables.
-
 ---
 
-## Project structure
+## Structure du projet
 
 ```
 proxmox-report-generator/
-├── tui.py                        # Terminal UI
-├── proxmox_report.py             # PDF report engine
-├── extract_sites_from_zabbix.py  # Zabbix → sites.csv
-├── sites.csv.example             # Template — copy to sites.csv
-├── .gitignore
-└── README.md
+├── report.py       # Script de génération PDF
+├── tui.py          # Interface terminal interactive
+├── sites.csv       # Liste des sites à administrer
+├── logo.png        # Logo personnalisé (optionnel, non versionné)
+└── README.md       # Ce fichier
 ```
+
+> Ajouter dans `.gitignore` :
+> ```
+> logo.png
+> *.pdf
+> rapports/
+> ```
 
 ---
 
-## Contributing
+## Dépendances
 
-Issues and pull requests are welcome.
+| Package | Usage |
+|---------|-------|
+| `requests` | Appels API Proxmox |
+| `urllib3` | Gestion SSL/TLS |
+| `fpdf2` | Génération PDF |
+| `paramiko` | Collecte SSH (optionnel) |
 
-## License
+---
 
-MIT
+## Licence
+
+MIT License — libre d'utilisation, modification et distribution.
+
+---
+
+## Author
+
+**Hassan Salmane** — IT Infrastructure Engineer
+[salmane.pro](https://salmane.pro) · [LinkedIn](https://linkedin.com/in/hassansalmane) · [GitHub](https://github.com/hassan-salmane)
